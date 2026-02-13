@@ -1,0 +1,68 @@
+name: GH-Actions
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+
+jobs:
+  go_service_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          clean: true
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: Go Service Build
+        run: |
+          go mod download
+          go build -o go-server
+      - name: Go Service Test
+        run: go test ./... -coverprofile /tmp/coverage.out
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: "/tmp/coverage.out"
+      - name: Build Docker image
+        run: |
+          docker build \
+            --label git_sha=${{ github.sha }} \
+            --label build_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+            --label version=${{ github.ref_name }} \
+            --label repository=${{ github.repository }} \
+            -t backend:${{ github.sha }} \
+            .
+
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+      - name: Generate SBOM
+        run: |
+          syft dir:. -o cyclonedx-json=sbom.cyclonedx.json
+          echo "SBOM generated:"
+          cat sbom.cyclonedx.json | head -50
+
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Semgrep
+        run: |
+          pip3 install --break-system-packages semgrep
+      - name: Run Semgrep scan
+        run: |
+          semgrep scan --config auto --json --output semgrep-results.json || true
+          cat semgrep-results.json | head -100

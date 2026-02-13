@@ -1,0 +1,21 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: billing
+  namespace: applications
+spec:
+  entryPoints:
+    - websecure
+  tls:
+    secretName: ci
+  routes:
+    - match: Host(`api.meridian.dev`) && PathPrefix(`/api/v0/webhooks/stripe`)
+      kind: Rule
+      services:
+        - name: billing
+          port: 80
+    - match: Host(`api.meridian.dev`) && PathPrefix(`/api/v0/billing/`)
+      kind: Rule
+      services:
+        - name: billing
+          port: 81

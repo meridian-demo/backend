@@ -1,0 +1,15 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backend
+  description: Backend API service for Meridian
+  annotations:
+    github.com/project-slug: meridian-demo/backend
+  tags:
+    - backend
+    - go
+spec:
+  type: service
+  lifecycle: production
+  owner: group:default/engineering
+  system: backend

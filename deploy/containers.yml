@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      app: bad
+  template:
+    metadata:
+      labels:
+        app: bad
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.27
+          resources:
+            requests:
+              cpu: "600m"   
+              memory: "256Mi"    
+            limits:
+              cpu: "500m"          # ❌ requests.cpu (600m) > limits.cpu (500m) -> fail
+              memory: "256Mi"
+        - name: metrics
+          image: busybox
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"          # ❌ 10x over requests (default cap 4x) -> fail
+              memory: "512Mi"      # ❌ 8x over requests (default cap 4x) -> fail
+      initContainers:
+        - name: init
+          image: busybox
+          command: ["sh", "-c", "echo init"]
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            # ❌ missing limits.{cpu,memory} -> fail (requireLimits=true)
