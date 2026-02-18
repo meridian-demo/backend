@@ -25,11 +25,6 @@ jobs:
           go build -o go-server
       - name: Go Service Test
         run: go test ./... -coverprofile /tmp/coverage.out
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: "/tmp/coverage.out"
       - name: Build Docker image
         run: |
           docker build \
